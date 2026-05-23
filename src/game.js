@@ -118,7 +118,7 @@ class MainScene extends Phaser.Scene {
     }
 
     if (wantsJump && grounded) {
-      this.player.setVelocityY(-810);
+      this.player.setVelocityY(-980);
     }
 
     if (!grounded) {
@@ -176,9 +176,9 @@ class MainScene extends Phaser.Scene {
 
     this.anims.create({
       key: "crouch",
-      frames: this.anims.generateFrameNumbers("girl", { start: 12, end: 15 }),
-      frameRate: 6,
-      repeat: -1
+      frames: [{ key: "girl", frame: 13 }],
+      frameRate: 1,
+      repeat: 0
     });
   }
 
