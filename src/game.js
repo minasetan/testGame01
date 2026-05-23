@@ -13,7 +13,10 @@ class MainScene extends Phaser.Scene {
   }
 
   preload() {
-    this.createPixelGirlTexture();
+    this.load.spritesheet("girl", "assets/sporty-girl-sheet.png", {
+      frameWidth: 362,
+      frameHeight: 362
+    });
     this.createTileTexture("ground", 48, 48, 0x6f4e37, 0x8b6f47, 0x3f2f25);
     this.createTileTexture("grass", 48, 16, 0x2d8f5a, 0x47c878, 0x1f6f45);
     this.createFlagTexture();
@@ -27,10 +30,13 @@ class MainScene extends Phaser.Scene {
     const platforms = this.physics.add.staticGroup();
     this.createCourse(platforms);
 
-    this.player = this.physics.add.sprite(90, 380, "girl");
+    this.createPlayerAnimations();
+
+    this.player = this.physics.add.sprite(90, 380, "girl", 0);
+    this.player.setScale(0.25);
     this.player.setCollideWorldBounds(true);
-    this.player.body.setSize(24, 38);
-    this.player.body.setOffset(12, 10);
+    this.player.body.setSize(142, 245);
+    this.player.body.setOffset(108, 78);
     this.player.setDragX(900);
     this.player.setMaxVelocity(250, 520);
 
@@ -73,7 +79,7 @@ class MainScene extends Phaser.Scene {
 
     if (this.cleared) {
       this.player.setVelocityX(0);
-      this.player.anims.stop();
+      this.player.anims.play("idle", true);
       return;
     }
 
@@ -102,6 +108,14 @@ class MainScene extends Phaser.Scene {
       this.player.setVelocityY(-405);
     }
 
+    if (!this.player.body.blocked.down) {
+      this.player.anims.play("jump", true);
+    } else if (Math.abs(this.player.body.velocity.x) > 20) {
+      this.player.anims.play("run", true);
+    } else {
+      this.player.anims.play("idle", true);
+    }
+
     if (this.player.y > GAME_HEIGHT + 80) {
       this.scene.restart();
     }
@@ -111,7 +125,31 @@ class MainScene extends Phaser.Scene {
     if (this.cleared) return;
     this.cleared = true;
     this.player.setTint(0xfff3a3);
+    this.player.anims.play("idle", true);
     this.statusText.setText("CLEAR! Press R to restart");
+  }
+
+  createPlayerAnimations() {
+    this.anims.create({
+      key: "idle",
+      frames: this.anims.generateFrameNumbers("girl", { start: 0, end: 3 }),
+      frameRate: 4,
+      repeat: -1
+    });
+
+    this.anims.create({
+      key: "run",
+      frames: this.anims.generateFrameNumbers("girl", { start: 4, end: 7 }),
+      frameRate: 10,
+      repeat: -1
+    });
+
+    this.anims.create({
+      key: "jump",
+      frames: this.anims.generateFrameNumbers("girl", { start: 8, end: 11 }),
+      frameRate: 8,
+      repeat: -1
+    });
   }
 
   createCourse(platforms) {
@@ -161,41 +199,6 @@ class MainScene extends Phaser.Scene {
     hills.fillEllipse(1250, 510, 1100, 300);
     hills.fillEllipse(2350, 500, 1000, 270);
     hills.setDepth(-1);
-  }
-
-  createPixelGirlTexture() {
-    const data = [
-      "................",
-      ".....333333.....",
-      "....33333333....",
-      "...3332222333...",
-      "...3322222233...",
-      "...3322022233...",
-      "....22222222....",
-      ".....220022.....",
-      "....55555555....",
-      "...5555555555...",
-      "..115555555511..",
-      ".11155555555111.",
-      "....55555555....",
-      "....55555555....",
-      "....777..777....",
-      "...7777..7777...",
-      "...7777..7777...",
-      "...1111..1111..."
-    ];
-    const colors = {
-      1: "#2f2f3a",
-      2: "#ffd1b3",
-      3: "#46312a",
-      5: "#e85d8d",
-      7: "#4d5bd5"
-    };
-    this.textures.generate("girl", {
-      data,
-      pixelWidth: 3,
-      palette: colors
-    });
   }
 
   createTileTexture(key, width, height, main, highlight, shadow) {
