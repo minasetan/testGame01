@@ -1,6 +1,8 @@
-const GAME_WIDTH = 960;
-const GAME_HEIGHT = 540;
-const WORLD_WIDTH = 3000;
+const WORLD_SCALE = 2;
+const TILE_SIZE = 48 * WORLD_SCALE;
+const GAME_WIDTH = 960 * WORLD_SCALE;
+const GAME_HEIGHT = 540 * WORLD_SCALE;
+const WORLD_WIDTH = 3000 * WORLD_SCALE;
 
 class MainScene extends Phaser.Scene {
   constructor() {
@@ -17,8 +19,8 @@ class MainScene extends Phaser.Scene {
       frameWidth: 362,
       frameHeight: 362
     });
-    this.createTileTexture("ground", 48, 48, 0x6f4e37, 0x8b6f47, 0x3f2f25);
-    this.createTileTexture("grass", 48, 16, 0x2d8f5a, 0x47c878, 0x1f6f45);
+    this.createTileTexture("ground", TILE_SIZE, TILE_SIZE, 0x6f4e37, 0x8b6f47, 0x3f2f25);
+    this.createTileTexture("grass", TILE_SIZE, 16 * WORLD_SCALE, 0x2d8f5a, 0x47c878, 0x1f6f45);
     this.createFlagTexture();
   }
 
@@ -32,24 +34,24 @@ class MainScene extends Phaser.Scene {
 
     this.createPlayerAnimations();
 
-    this.player = this.physics.add.sprite(90, 380, "girl", 0);
-    this.player.setScale(0.25);
+    this.player = this.physics.add.sprite(90 * WORLD_SCALE, 380 * WORLD_SCALE, "girl", 0);
+    this.player.setScale(1);
     this.player.setCollideWorldBounds(true);
     this.player.body.setSize(142, 245);
     this.player.body.setOffset(108, 78);
     this.player.standBody = { width: 142, height: 245, offsetX: 108, offsetY: 78 };
     this.player.crouchBody = { width: 160, height: 176, offsetX: 101, offsetY: 147 };
     this.player.isCrouching = false;
-    this.player.setDragX(900);
-    this.player.setMaxVelocity(250, 520);
+    this.player.setDragX(1800);
+    this.player.setMaxVelocity(500, 1040);
 
     this.physics.add.collider(this.player, platforms);
     this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
-    this.cameras.main.setDeadzone(160, 120);
+    this.cameras.main.setDeadzone(320, 240);
 
-    const flag = this.physics.add.staticSprite(2865, 400, "flag");
-    flag.body.setSize(52, 128);
-    flag.body.setOffset(7, 0);
+    const flag = this.physics.add.staticSprite(2865 * WORLD_SCALE, 400 * WORLD_SCALE, "flag");
+    flag.body.setSize(52 * WORLD_SCALE, 128 * WORLD_SCALE);
+    flag.body.setOffset(7 * WORLD_SCALE, 0);
     this.physics.add.overlap(this.player, flag, () => this.handleClear(), null, this);
 
     this.cursors = this.input.keyboard.createCursorKeys();
@@ -65,7 +67,7 @@ class MainScene extends Phaser.Scene {
     this.statusText = this.add
       .text(24, 20, "A/D: move  W/Space: jump  S: crouch", {
         fontFamily: "monospace",
-        fontSize: "18px",
+        fontSize: "28px",
         color: "#f8fafc",
         backgroundColor: "rgba(16, 24, 39, 0.55)",
         padding: { x: 12, y: 8 }
@@ -102,21 +104,21 @@ class MainScene extends Phaser.Scene {
       this.player.setAccelerationX(0);
       this.player.setVelocityX(0);
     } else if (movingLeft) {
-      this.player.setAccelerationX(-1200);
+      this.player.setAccelerationX(-2400);
       this.player.setFlipX(true);
     } else if (movingRight) {
-      this.player.setAccelerationX(1200);
+      this.player.setAccelerationX(2400);
       this.player.setFlipX(false);
     } else {
       this.player.setAccelerationX(0);
     }
 
     if (wantsCrouch && !grounded) {
-      this.player.setVelocityY(Math.min(this.player.body.velocity.y + 24, 520));
+      this.player.setVelocityY(Math.min(this.player.body.velocity.y + 48, 1040));
     }
 
     if (wantsJump && grounded) {
-      this.player.setVelocityY(-405);
+      this.player.setVelocityY(-810);
     }
 
     if (!grounded) {
@@ -129,7 +131,7 @@ class MainScene extends Phaser.Scene {
       this.player.anims.play("idle", true);
     }
 
-    if (this.player.y > GAME_HEIGHT + 80) {
+    if (this.player.y > GAME_HEIGHT + 160) {
       this.scene.restart();
     }
   }
@@ -184,13 +186,13 @@ class MainScene extends Phaser.Scene {
     const addBlock = (x, y, widthInTiles, heightInTiles = 1) => {
       for (let row = 0; row < heightInTiles; row += 1) {
         for (let col = 0; col < widthInTiles; col += 1) {
-          const block = platforms.create(x + col * 48, y + row * 48, "ground");
+          const block = platforms.create(x * WORLD_SCALE + col * TILE_SIZE, y * WORLD_SCALE + row * TILE_SIZE, "ground");
           block.setOrigin(0, 0);
           block.refreshBody();
         }
       }
       for (let col = 0; col < widthInTiles; col += 1) {
-        const grass = this.add.image(x + col * 48, y - 10, "grass");
+        const grass = this.add.image(x * WORLD_SCALE + col * TILE_SIZE, y * WORLD_SCALE - 10 * WORLD_SCALE, "grass");
         grass.setOrigin(0, 0);
       }
     };
@@ -218,14 +220,14 @@ class MainScene extends Phaser.Scene {
     sky.fillGradientStyle(0x78c6ef, 0x78c6ef, 0xd8f3ff, 0xd8f3ff, 1);
     sky.fillRect(0, 0, WORLD_WIDTH, GAME_HEIGHT);
 
-    const sun = this.add.circle(180, 96, 38, 0xffdd6e);
+    const sun = this.add.circle(180 * WORLD_SCALE, 96 * WORLD_SCALE, 38 * WORLD_SCALE, 0xffdd6e);
     sun.setScrollFactor(0.25);
 
     const hills = this.add.graphics();
     hills.fillStyle(0x5cad75, 1);
-    hills.fillEllipse(420, 500, 900, 260);
-    hills.fillEllipse(1250, 510, 1100, 300);
-    hills.fillEllipse(2350, 500, 1000, 270);
+    hills.fillEllipse(420 * WORLD_SCALE, 500 * WORLD_SCALE, 900 * WORLD_SCALE, 260 * WORLD_SCALE);
+    hills.fillEllipse(1250 * WORLD_SCALE, 510 * WORLD_SCALE, 1100 * WORLD_SCALE, 300 * WORLD_SCALE);
+    hills.fillEllipse(2350 * WORLD_SCALE, 500 * WORLD_SCALE, 1000 * WORLD_SCALE, 270 * WORLD_SCALE);
     hills.setDepth(-1);
   }
 
@@ -246,14 +248,14 @@ class MainScene extends Phaser.Scene {
   createFlagTexture() {
     const graphics = this.make.graphics({ x: 0, y: 0, add: false });
     graphics.fillStyle(0xeeeeee, 1);
-    graphics.fillRect(10, 0, 7, 132);
+    graphics.fillRect(10 * WORLD_SCALE, 0, 7 * WORLD_SCALE, 132 * WORLD_SCALE);
     graphics.fillStyle(0xf05365, 1);
-    graphics.fillTriangle(17, 8, 70, 28, 17, 50);
+    graphics.fillTriangle(17 * WORLD_SCALE, 8 * WORLD_SCALE, 70 * WORLD_SCALE, 28 * WORLD_SCALE, 17 * WORLD_SCALE, 50 * WORLD_SCALE);
     graphics.fillStyle(0xd43d56, 1);
-    graphics.fillTriangle(17, 50, 58, 67, 17, 67);
+    graphics.fillTriangle(17 * WORLD_SCALE, 50 * WORLD_SCALE, 58 * WORLD_SCALE, 67 * WORLD_SCALE, 17 * WORLD_SCALE, 67 * WORLD_SCALE);
     graphics.fillStyle(0x58412f, 1);
-    graphics.fillRect(0, 128, 34, 8);
-    graphics.generateTexture("flag", 74, 136);
+    graphics.fillRect(0, 128 * WORLD_SCALE, 34 * WORLD_SCALE, 8 * WORLD_SCALE);
+    graphics.generateTexture("flag", 74 * WORLD_SCALE, 136 * WORLD_SCALE);
     graphics.destroy();
   }
 }
@@ -272,7 +274,7 @@ const config = {
   physics: {
     default: "arcade",
     arcade: {
-      gravity: { y: 980 },
+      gravity: { y: 1960 },
       debug: false
     }
   },
