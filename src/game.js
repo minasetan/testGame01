@@ -37,6 +37,9 @@ class MainScene extends Phaser.Scene {
     this.player.setCollideWorldBounds(true);
     this.player.body.setSize(142, 245);
     this.player.body.setOffset(108, 78);
+    this.player.standBody = { width: 142, height: 245, offsetX: 108, offsetY: 78 };
+    this.player.crouchBody = { width: 160, height: 176, offsetX: 101, offsetY: 147 };
+    this.player.isCrouching = false;
     this.player.setDragX(900);
     this.player.setMaxVelocity(250, 520);
 
@@ -60,7 +63,7 @@ class MainScene extends Phaser.Scene {
     });
 
     this.statusText = this.add
-      .text(24, 20, "A/D: move  W/Space: jump", {
+      .text(24, 20, "A/D: move  W/Space: jump  S: crouch", {
         fontFamily: "monospace",
         fontSize: "18px",
         color: "#f8fafc",
@@ -85,12 +88,20 @@ class MainScene extends Phaser.Scene {
 
     const movingLeft = this.keys.left.isDown || this.cursors.left.isDown;
     const movingRight = this.keys.right.isDown || this.cursors.right.isDown;
+    const grounded = this.player.body.blocked.down;
+    const wantsCrouch = this.keys.down.isDown || this.cursors.down.isDown;
+    const isCrouching = wantsCrouch && grounded;
     const wantsJump =
       Phaser.Input.Keyboard.JustDown(this.keys.jump) ||
       Phaser.Input.Keyboard.JustDown(this.keys.up) ||
       Phaser.Input.Keyboard.JustDown(this.cursors.up);
 
-    if (movingLeft) {
+    this.setPlayerCrouch(isCrouching);
+
+    if (isCrouching) {
+      this.player.setAccelerationX(0);
+      this.player.setVelocityX(0);
+    } else if (movingLeft) {
       this.player.setAccelerationX(-1200);
       this.player.setFlipX(true);
     } else if (movingRight) {
@@ -100,16 +111,18 @@ class MainScene extends Phaser.Scene {
       this.player.setAccelerationX(0);
     }
 
-    if (this.keys.down.isDown && !this.player.body.blocked.down) {
+    if (wantsCrouch && !grounded) {
       this.player.setVelocityY(Math.min(this.player.body.velocity.y + 24, 520));
     }
 
-    if (wantsJump && this.player.body.blocked.down) {
+    if (wantsJump && grounded) {
       this.player.setVelocityY(-405);
     }
 
-    if (!this.player.body.blocked.down) {
+    if (!grounded) {
       this.player.anims.play("jump", true);
+    } else if (isCrouching) {
+      this.player.anims.play("crouch", true);
     } else if (Math.abs(this.player.body.velocity.x) > 20) {
       this.player.anims.play("run", true);
     } else {
@@ -127,6 +140,14 @@ class MainScene extends Phaser.Scene {
     this.player.setTint(0xfff3a3);
     this.player.anims.play("idle", true);
     this.statusText.setText("CLEAR! Press R to restart");
+  }
+
+  setPlayerCrouch(isCrouching) {
+    if (this.player.isCrouching === isCrouching) return;
+    this.player.isCrouching = isCrouching;
+    const body = isCrouching ? this.player.crouchBody : this.player.standBody;
+    this.player.body.setSize(body.width, body.height);
+    this.player.body.setOffset(body.offsetX, body.offsetY);
   }
 
   createPlayerAnimations() {
@@ -148,6 +169,13 @@ class MainScene extends Phaser.Scene {
       key: "jump",
       frames: this.anims.generateFrameNumbers("girl", { start: 8, end: 11 }),
       frameRate: 8,
+      repeat: -1
+    });
+
+    this.anims.create({
+      key: "crouch",
+      frames: this.anims.generateFrameNumbers("girl", { start: 12, end: 15 }),
+      frameRate: 6,
       repeat: -1
     });
   }
