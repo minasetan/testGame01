@@ -21,6 +21,7 @@ class MainScene extends Phaser.Scene {
     });
     this.createTileTexture("ground", TILE_SIZE, TILE_SIZE, 0x6f4e37, 0x8b6f47, 0x3f2f25);
     this.createTileTexture("grass", TILE_SIZE, 16 * WORLD_SCALE, 0x2d8f5a, 0x47c878, 0x1f6f45);
+    this.createAnimatedTileTexture();
     this.createFlagTexture();
   }
 
@@ -28,6 +29,7 @@ class MainScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, WORLD_WIDTH, GAME_HEIGHT);
     this.cameras.main.setBounds(0, 0, WORLD_WIDTH, GAME_HEIGHT);
     this.createBackground();
+    this.createAnimatedTilesLayer();
 
     const platforms = this.physics.add.staticGroup();
     this.createCourse(platforms);
@@ -213,6 +215,94 @@ class MainScene extends Phaser.Scene {
     addBlock(2710, 388, 5);
   }
 
+  createAnimatedTilesLayer() {
+    const mapWidth = Math.ceil(WORLD_WIDTH / TILE_SIZE);
+    const mapHeight = Math.ceil(GAME_HEIGHT / TILE_SIZE);
+    const data = new Array(mapWidth * mapHeight).fill(0);
+    const waterRow = 9;
+
+    const addAnimatedTiles = (startCol, width) => {
+      for (let col = startCol; col < startCol + width; col += 1) {
+        data[waterRow * mapWidth + col] = 1;
+      }
+    };
+
+    addAnimatedTiles(14, 2);
+    addAnimatedTiles(25, 3);
+    addAnimatedTiles(38, 5);
+
+    const animatedMap = {
+      compressionlevel: -1,
+      height: mapHeight,
+      infinite: false,
+      layers: [
+        {
+          data,
+          height: mapHeight,
+          id: 1,
+          name: "Animated Water",
+          opacity: 1,
+          type: "tilelayer",
+          visible: true,
+          width: mapWidth,
+          x: 0,
+          y: 0
+        }
+      ],
+      nextlayerid: 2,
+      nextobjectid: 1,
+      orientation: "orthogonal",
+      renderorder: "right-down",
+      tiledversion: "1.10.2",
+      tileheight: TILE_SIZE,
+      tilesets: [
+        {
+          columns: 4,
+          firstgid: 1,
+          image: "animated-water.png",
+          imageheight: TILE_SIZE,
+          imagewidth: TILE_SIZE * 4,
+          margin: 0,
+          name: "animated-water",
+          spacing: 0,
+          tilecount: 4,
+          tileheight: TILE_SIZE,
+          tiles: [
+            {
+              animation: [
+                { duration: 170, tileid: 0 },
+                { duration: 170, tileid: 1 },
+                { duration: 170, tileid: 2 },
+                { duration: 170, tileid: 3 }
+              ],
+              id: 0
+            }
+          ],
+          tilewidth: TILE_SIZE
+        }
+      ],
+      tilewidth: TILE_SIZE,
+      type: "map",
+      version: "1.10",
+      width: mapWidth
+    };
+
+    this.cache.tilemap.add("animated-course", {
+      data: animatedMap,
+      format: Phaser.Tilemaps.Formats.TILED_JSON
+    });
+
+    const map = this.make.tilemap({ key: "animated-course" });
+    const tileset = map.addTilesetImage("animated-water", "animatedWater");
+    const layer = map.createLayer("Animated Water", tileset, 0, 0);
+    layer.setDepth(0);
+
+    const animatedTiles = this.sys.animatedTiles || this.animatedTiles;
+    if (animatedTiles) {
+      animatedTiles.init(map);
+    }
+  }
+
   createBackground() {
     this.cameras.main.setBackgroundColor("#80c7ef");
 
@@ -242,6 +332,33 @@ class MainScene extends Phaser.Scene {
     graphics.lineStyle(2, shadow, 0.55);
     graphics.strokeRect(0, 0, width, height);
     graphics.generateTexture(key, width, height);
+    graphics.destroy();
+  }
+
+  createAnimatedTileTexture() {
+    const graphics = this.make.graphics({ x: 0, y: 0, add: false });
+
+    for (let frame = 0; frame < 4; frame += 1) {
+      const x = frame * TILE_SIZE;
+      const waveOffset = frame * 8 * WORLD_SCALE;
+      graphics.fillStyle(0x1e7fc9, 1);
+      graphics.fillRect(x, 0, TILE_SIZE, TILE_SIZE);
+      graphics.fillStyle(0x58c7f6, 1);
+      graphics.fillRect(x, 0, TILE_SIZE, 18 * WORLD_SCALE);
+      graphics.fillStyle(0x9ae6ff, 0.95);
+
+      for (let wave = -1; wave < 4; wave += 1) {
+        const waveX = x + wave * 34 * WORLD_SCALE + waveOffset;
+        graphics.fillEllipse(waveX, 17 * WORLD_SCALE, 32 * WORLD_SCALE, 8 * WORLD_SCALE);
+      }
+
+      graphics.fillStyle(0x155f9d, 1);
+      graphics.fillRect(x, 52 * WORLD_SCALE, TILE_SIZE, 10 * WORLD_SCALE);
+      graphics.fillStyle(0x0d4d83, 0.9);
+      graphics.fillRect(x, 76 * WORLD_SCALE, TILE_SIZE, 20 * WORLD_SCALE);
+    }
+
+    graphics.generateTexture("animatedWater", TILE_SIZE * 4, TILE_SIZE);
     graphics.destroy();
   }
 
@@ -277,6 +394,15 @@ const config = {
       gravity: { y: 1960 },
       debug: false
     }
+  },
+  plugins: {
+    scene: [
+      {
+        key: "animatedTiles",
+        plugin: window["AnimatedTiles.min"],
+        mapping: "animatedTiles"
+      }
+    ]
   },
   scene: MainScene
 };
