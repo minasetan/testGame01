@@ -8,6 +8,7 @@ class MainScene extends Phaser.Scene {
   constructor() {
     super("MainScene");
     this.player = null;
+    this.playerHitboxDebug = null;
     this.cursors = null;
     this.keys = null;
     this.statusText = null;
@@ -48,6 +49,9 @@ class MainScene extends Phaser.Scene {
     this.player.isCrouching = false;
     this.player.setDragX(1800);
     this.player.setMaxVelocity(500, 1040);
+    this.player.setDepth(4);
+    this.playerHitboxDebug = this.add.graphics();
+    this.playerHitboxDebug.setDepth(3);
 
     this.physics.add.collider(this.player, platforms);
     this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
@@ -138,6 +142,8 @@ class MainScene extends Phaser.Scene {
     if (this.player.y > GAME_HEIGHT + 160) {
       this.scene.restart();
     }
+
+    this.updatePlayerHitboxDebug();
   }
 
   handleClear() {
@@ -154,6 +160,17 @@ class MainScene extends Phaser.Scene {
     const body = isCrouching ? this.player.crouchBody : this.player.standBody;
     this.player.body.setSize(body.width, body.height);
     this.player.body.setOffset(body.offsetX, body.offsetY);
+  }
+
+  updatePlayerHitboxDebug() {
+    if (!this.playerHitboxDebug || !this.player.body) return;
+
+    const body = this.player.body;
+    this.playerHitboxDebug.clear();
+    this.playerHitboxDebug.fillStyle(0xff3b7a, 0.22);
+    this.playerHitboxDebug.fillRect(body.x, body.y, body.width, body.height);
+    this.playerHitboxDebug.lineStyle(5, 0xff2f7d, 0.85);
+    this.playerHitboxDebug.strokeRect(body.x, body.y, body.width, body.height);
   }
 
   createPlayerAnimations() {
