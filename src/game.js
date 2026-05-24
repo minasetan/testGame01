@@ -20,7 +20,7 @@ class MainScene extends Phaser.Scene {
       frameHeight: 362
     });
     this.createTileTexture("ground", TILE_SIZE, TILE_SIZE, 0x6f4e37, 0x8b6f47, 0x3f2f25);
-    this.createTileTexture("grass", TILE_SIZE, 16 * WORLD_SCALE, 0x2d8f5a, 0x47c878, 0x1f6f45);
+    this.createAnimatedTerrainTextures();
     this.createAnimatedTileTexture();
     this.createFlagTexture();
   }
@@ -30,6 +30,8 @@ class MainScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, WORLD_WIDTH, GAME_HEIGHT);
     this.createBackground();
     this.createAnimatedTilesLayer();
+
+    this.createTerrainAnimations();
 
     const platforms = this.physics.add.staticGroup();
     this.createCourse(platforms);
@@ -184,18 +186,38 @@ class MainScene extends Phaser.Scene {
     });
   }
 
+  createTerrainAnimations() {
+    this.anims.create({
+      key: "terrain-top",
+      frames: [0, 1, 2, 3].map((frame) => ({ key: `terrainTop${frame}` })),
+      frameRate: 4,
+      repeat: -1
+    });
+
+    this.anims.create({
+      key: "terrain-ground",
+      frames: [0, 1, 2, 3].map((frame) => ({ key: `terrainGround${frame}` })),
+      frameRate: 3,
+      repeat: -1
+    });
+  }
+
   createCourse(platforms) {
     const addBlock = (x, y, widthInTiles, heightInTiles = 1) => {
       for (let row = 0; row < heightInTiles; row += 1) {
         for (let col = 0; col < widthInTiles; col += 1) {
-          const block = platforms.create(x * WORLD_SCALE + col * TILE_SIZE, y * WORLD_SCALE + row * TILE_SIZE, "ground");
+          const tileX = x * WORLD_SCALE + col * TILE_SIZE;
+          const tileY = y * WORLD_SCALE + row * TILE_SIZE;
+          const block = platforms.create(tileX, tileY, "ground");
           block.setOrigin(0, 0);
+          block.setVisible(false);
           block.refreshBody();
+
+          const tile = this.add.sprite(tileX, tileY, row === 0 ? "terrainTop0" : "terrainGround0");
+          tile.setOrigin(0, 0);
+          tile.setDepth(2);
+          tile.play(row === 0 ? "terrain-top" : "terrain-ground");
         }
-      }
-      for (let col = 0; col < widthInTiles; col += 1) {
-        const grass = this.add.image(x * WORLD_SCALE + col * TILE_SIZE, y * WORLD_SCALE - 10 * WORLD_SCALE, "grass");
-        grass.setOrigin(0, 0);
       }
     };
 
@@ -335,6 +357,67 @@ class MainScene extends Phaser.Scene {
     graphics.destroy();
   }
 
+  createAnimatedTerrainTextures() {
+    const graphics = this.make.graphics({ x: 0, y: 0, add: false });
+
+    for (let frame = 0; frame < 4; frame += 1) {
+      const sway = frame % 2 === 0 ? 0 : 2 * WORLD_SCALE;
+
+      graphics.clear();
+      graphics.fillStyle(0x76543a, 1);
+      graphics.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
+      graphics.fillStyle(0x8a6544, 1);
+      graphics.fillRect(0, 28 * WORLD_SCALE, TILE_SIZE, 18 * WORLD_SCALE);
+      graphics.fillStyle(0x4f3a2b, 0.85);
+      graphics.fillRect(0, TILE_SIZE - 10 * WORLD_SCALE, TILE_SIZE, 10 * WORLD_SCALE);
+      graphics.lineStyle(2, 0x4f3a2b, 0.45);
+      graphics.strokeRect(0, 0, TILE_SIZE, TILE_SIZE);
+      graphics.fillStyle(0x2f985f, 1);
+      graphics.fillRect(0, 0, TILE_SIZE, 18 * WORLD_SCALE);
+      graphics.fillStyle(0x52d982, 1);
+      graphics.fillRect(0, 0, TILE_SIZE, 7 * WORLD_SCALE);
+      graphics.fillStyle(0x1f7549, 1);
+
+      for (let blade = 0; blade < 9; blade += 1) {
+        const x = blade * 12 * WORLD_SCALE + 4 * WORLD_SCALE;
+        graphics.fillTriangle(
+          x,
+          18 * WORLD_SCALE,
+          x + 4 * WORLD_SCALE,
+          6 * WORLD_SCALE + sway,
+          x + 8 * WORLD_SCALE,
+          18 * WORLD_SCALE
+        );
+      }
+
+      graphics.fillStyle(frame % 2 === 0 ? 0xfff1a8 : 0xf9a8d4, 1);
+      graphics.fillCircle(17 * WORLD_SCALE + frame * WORLD_SCALE, 10 * WORLD_SCALE, 2 * WORLD_SCALE);
+      graphics.fillCircle(70 * WORLD_SCALE - frame * WORLD_SCALE, 12 * WORLD_SCALE, 2 * WORLD_SCALE);
+      graphics.generateTexture(`terrainTop${frame}`, TILE_SIZE, TILE_SIZE);
+
+      graphics.clear();
+      graphics.fillStyle(0x6f4e37, 1);
+      graphics.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
+      graphics.fillStyle(0x866344, 1);
+      graphics.fillRect(0, 0, TILE_SIZE, 15 * WORLD_SCALE);
+      graphics.fillStyle(0x4f3a2b, 1);
+      graphics.fillRect(0, TILE_SIZE - 8 * WORLD_SCALE, TILE_SIZE, 8 * WORLD_SCALE);
+      graphics.lineStyle(2, 0x3f2f25, 0.4);
+      graphics.strokeRect(0, 0, TILE_SIZE, TILE_SIZE);
+
+      for (let pebble = 0; pebble < 5; pebble += 1) {
+        const x = ((pebble * 19 + frame * 5) % 42) * WORLD_SCALE + 8 * WORLD_SCALE;
+        const y = (28 + pebble * 10) * WORLD_SCALE;
+        graphics.fillStyle(pebble % 2 === 0 ? 0x9a7654 : 0x5d4633, 0.7);
+        graphics.fillRect(x, y, 5 * WORLD_SCALE, 3 * WORLD_SCALE);
+      }
+
+      graphics.generateTexture(`terrainGround${frame}`, TILE_SIZE, TILE_SIZE);
+    }
+
+    graphics.destroy();
+  }
+
   createAnimatedTileTexture() {
     const graphics = this.make.graphics({ x: 0, y: 0, add: false });
 
@@ -399,7 +482,7 @@ const config = {
     scene: [
       {
         key: "animatedTiles",
-        plugin: window["AnimatedTiles.min"],
+        plugin: window.AnimatedTilesPlugin,
         mapping: "animatedTiles"
       }
     ]
